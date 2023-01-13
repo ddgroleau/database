@@ -33,7 +33,7 @@ jobs:
           passphrase: ${{ secrets.PASSPHRASE }}
           envs: PG_PORT,PG_NETWORK,PG_USER,PG_PASSWORD,PG_DB,PGADMIN_EMAIL,PGADMIN_PASS,PGADMIN_PORT
           script: |
-            export envVars=( "PG_PORT" "PG_NETWORK" "PG_USER" "PG_PASSWORD" "PG_DB" "PGADMIN_EMAIL" "PGADMIN_PASS" "PGADMIN_PORT" ) \
+            export envVars=( "$PG_PORT" "$PG_NETWORK" "$PG_USER" "$PG_PASSWORD" "$PG_DB" "$PGADMIN_EMAIL" "$PGADMIN_PASS" "$PGADMIN_PORT" ) \
             && echo $envVars[7] \
             && if [[ ! -d ~/repos  ]]; then mkdir repos; fi \
             && if [[ ! -d ~/repos/database ]]; \
