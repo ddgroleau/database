@@ -1,0 +1,61 @@
+name: Deploy to Linode Compute Instance
+
+on:
+  push:
+    branches: ["main"]
+
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Docker - Pull Images and Run Containers on Linode Remote Server
+        uses: appleboy/ssh-action@master
+        env:
+          PG_PORT: ${{ secrets.PG_PORT }}
+          PG_NETWORK: ${{ secrets.PG_NETWORK }}
+          PG_USER: ${{ secrets.PG_USER }}
+          PG_PASSWORD: ${{ secrets.PG_PASSWORD }}
+          PG_DB: ${{ secrets.PG_DB }}
+          PGADMIN_EMAIL: ${{ secrets.PGADMIN_EMAIL }}
+          PGADMIN_PASS: ${{ secrets.PGADMIN_PASS }}
+          PGADMIN_PORT: ${{ secrets.PGADMIN_PORT }}
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER_NAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.PORT }}
+          passphrase: ${{ secrets.PASSPHRASE }}
+          envs: PG_PORT,PG_NETWORK,PG_USER,PG_PASSWORD,PG_DB,PGADMIN_EMAIL,PGADMIN_PASS,PGADMIN_PORT
+          script: |
+            export envVars=( "PG_PORT" "PG_NETWORK" "PG_USER" "PG_PASSWORD" "PG_DB" "PGADMIN_EMAIL" "PGADMIN_PASS" "PGADMIN_PORT" ) \
+            && if [[ ! -d ~/repos  ]]; then mkdir repos; fi \
+            && if [[ ! -d ~/repos/database ]]; \
+            then (cd repos && git clone https://github.com/ddgroleau/database.git); \
+            fi \
+            && cd ~/repos/database \
+            && git pull origin main \
+            && if [[ -z $(docker container ls -a | grep "pg_container") ]]; \
+            then echo "No container found. Starting pg_container container..."; \
+            else docker stop pg_container && docker rm pg_container; \
+            fi \
+            && if [[ -z $(docker container ls -a | grep "pgadmin4_container") ]]; \
+            then echo "No container found. Starting pgadmin4_container container..."; \
+            else docker stop pgadmin4_container && docker rm pgadmin4_container; \
+            fi \
+            && PG_PORT="${envVars[0]}" \
+            PG_NETWORK="${envVars[1]}" \
+            PG_USER="${envVars[2]}" \
+            PG_PASSWORD="${envVars[3]}" \
+            PG_DB="${envVars[4]}" \
+            PGADMIN_EMAIL="${envVars[5]}" \
+            PGADMIN_PASS="${envVars[6]}" \
+            PGADMIN_PORT="${envVars[7]}" \
+            docker compose up -d --build \
+            && exit \
+            && exit 0;
